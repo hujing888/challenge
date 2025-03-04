@@ -27,6 +27,18 @@ public class FinancialTest {
     }
 
     @Test
+    public void testYield1() throws FinancialFuncException {
+        Date settlement = DateUtil.parse("2024-12-01", "yyyy-MM-dd");
+        Date maturity = DateUtil.parse("2025-05-01", "yyyy-MM-dd");
+        double rate = 0.05;
+        double pr = 75;
+        double redemption = 100;
+
+        double actualValue = Financial.yield(settlement, maturity, rate, pr, redemption, Frequency.SemiAnnual, DayCountBasis.ActualActual);
+        Assert.assertEquals(0.861026611, actualValue, 0.0001);
+    }
+
+    @Test
     public void testYieldMat() throws FinancialFuncException {
         Date settlement = DateUtil.parse("1993-12-31", "yyyy-MM-dd");
         Date maturity = DateUtil.parse("2000-02-28", "yyyy-MM-dd");
@@ -37,6 +49,19 @@ public class FinancialTest {
 
         double actualValue = Financial.yieldMat(settlement, maturity, issue, rate, pr, DayCountBasis.ActualActual);
         Assert.assertEquals(0.136710295, actualValue, 0.0001);
+    }
+
+    @Test
+    public void testYieldMat2() throws FinancialFuncException {
+        Date settlement = DateUtil.parse("1993-12-31", "yyyy-MM-dd");
+        Date maturity = DateUtil.parse("1995-11-30", "yyyy-MM-dd");
+        Date issue = DateUtil.parse("1993-02-28", "yyyy-MM-dd");
+
+        double rate = 0.07;
+        double pr = 75;
+
+        double actualValue = Financial.yieldMat(settlement, maturity, issue, rate, pr, DayCountBasis.UsPsa30_360);
+        Assert.assertEquals(0.2481350652412, actualValue, 0.0001);
     }
 
     @Test
@@ -57,7 +82,9 @@ public class FinancialTest {
         double coupon = 100;
         double yld = 0.03;
 
-        double actualValue = Financial.mDuration(DateUtil.beginOfDay(settlement), DateUtil.beginOfDay(maturity), coupon, yld, Frequency.Annual, DayCountBasis.Europ30_360);
+        //跟EXCEL中入参有出入，重新调整下
+        //double actualValue = Financial.mDuration(DateUtil.beginOfDay(settlement), DateUtil.beginOfDay(maturity), coupon, yld, Frequency.Annual, DayCountBasis.Europ30_360);
+        double actualValue = Financial.mDuration(DateUtil.beginOfDay(settlement), DateUtil.beginOfDay(maturity), coupon, yld, Frequency.SemiAnnual, DayCountBasis.ActualActual);
         Assert.assertEquals(7.716108992, actualValue, 0.0001);
     }
 
@@ -122,5 +149,54 @@ public class FinancialTest {
             Assert.assertEquals(line, expectValue, actualValue, 0.0001);
             System.out.println(line + "    actual:" + String.valueOf(actualValue) + "    pass!");
         }
+    }
+
+
+    //异常测试用例
+    @Test
+    public void testYieldException() throws Exception{
+
+        Date settlement = DateUtil.parse("1993-12-31", "yyyy-MM-dd");
+        Date maturity = DateUtil.parse("2025-05-01", "yyyy-MM-dd");
+        double rate = 0.05;
+        double pr = 75;
+        double redemption = 100;
+        try{
+            Financial.yield(null, maturity, rate, pr, redemption, Frequency.SemiAnnual, DayCountBasis.Actual365);
+        }catch (FinancialFuncException e){
+            Assert.assertEquals("settlement must not be null",e.getMessage());
+        }
+
+        try{
+            Financial.yield(settlement, null, rate, pr, redemption, Frequency.SemiAnnual, DayCountBasis.Actual365);
+        }catch (FinancialFuncException e){
+            Assert.assertEquals("maturity must not be null",e.getMessage());
+        }
+
+        try{
+            Date settlement2 = DateUtil.parse("2026-12-31", "yyyy-MM-dd");
+            Financial.yield(settlement2, maturity, 2, pr, redemption, Frequency.SemiAnnual, DayCountBasis.Actual365);
+        }catch (FinancialFuncException e){
+            Assert.assertEquals("maturity must be after settlement",e.getMessage());
+        }
+
+        try{
+            Financial.yield(settlement, maturity, -1, pr, redemption, Frequency.SemiAnnual, DayCountBasis.Actual365);
+        }catch (FinancialFuncException e){
+            Assert.assertEquals("rate must not be negative",e.getMessage());
+        }
+
+        try{
+            Financial.yield(settlement, maturity, rate, -1, redemption, Frequency.SemiAnnual, DayCountBasis.Actual365);
+        }catch (FinancialFuncException e){
+            Assert.assertEquals("pr must be more than 0",e.getMessage());
+        }
+
+        try{
+            Financial.yield(settlement, maturity, rate, pr, -1, Frequency.SemiAnnual, DayCountBasis.Actual365);
+        }catch (FinancialFuncException e){
+            Assert.assertEquals("redemption must be more than 0",e.getMessage());
+        }
+
     }
 }

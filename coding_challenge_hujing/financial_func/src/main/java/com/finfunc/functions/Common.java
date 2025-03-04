@@ -5,9 +5,10 @@ import com.finfunc.exception.FinancialFuncException;
 import java.math.BigDecimal;
 
 public class Common {
-    private final static double PRECISION = 1e-6;
+    public final static double PRECISION = 1e-6;
+    public final static  int DEFAULT_NEWTON_COUNT = 20;
 
-    public boolean areEqual(double x, double y) {
+    public static boolean areEqual(double x, double y) {
         if (Math.abs(x - y) < PRECISION) {
             return true;
         } else {
